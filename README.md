@@ -5,7 +5,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/bicubico/vohvelo">
-    <img src="images/vohvelo-logo.png" alt="Logo" width="80" height="80">
+    <img src="images/vohvelo-logo.png" alt="Logo" width="300" height="300">
   </a>
 
 <h3 align="center">VOHVELO</h3>
