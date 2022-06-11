@@ -61,13 +61,13 @@
 https://user-images.githubusercontent.com/5770504/173208139-d86893e6-f79f-4e42-938e-6647acd77cce.mp4
 
 
-Run your process (with the files needed) in another machine and bring back the results.
+Run your process (with the files needed) on another machine and bring back the results.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
 
-### Built With Bash?
+### Built With Bash
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -75,13 +75,15 @@ Run your process (with the files needed) in another machine and bring back the r
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Just clone the project, and run it in your local machine.
-The process to be run must be installed in the remote machine.
+Just clone the project and run it in your local machine.
+The process to be run must be already installed in the remote machine.
 
 ### Prerequisites
 
 What you'll need:
 * bash
+* ssh
+* scp
 
 ### Installation
 
