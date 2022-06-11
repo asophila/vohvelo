@@ -11,7 +11,7 @@
 <h3 align="center">VOHVELO</h3>
 
   <p align="center">
-    Vohvelo [βo̞ʰ ve̞lo̞ʰ] aims to be a simple and widely usable tool to run processes on a remote machine. Although is quite simple to do just by SSH'ing into another machine and running a process, when there are files to process, that manual work of copiing, waiting the process to finish, and bringing the results back (and cleaning up the remote host) can be a little bit frustrating.
+    Vohvelo [βo̞ʰ ve̞lo̞ʰ] aims to be a simple and widely usable tool to run processes on a remote machine. Although is quite simple to do just by SSH'ing into another machine and running a process, that manual work of copying, waiting the process to finish and bringing the results back (and cleaning up the remote host) can be a little bit frustrating.
     <br />
     The original use case comes from trying to transcode from x265 in a Raspberry Pi, failing to do so, and trying to automate the outsourced process into my main computer.
     <br />
