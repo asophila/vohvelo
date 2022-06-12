@@ -106,7 +106,7 @@ Usage is simple:
 ```
 
 Example:
-Suposse we have a video file in a low power machine, a Raspberry Pi or something like that, and we need to do the transcoding from x265 to x264 to make it easier for de Rpi to playback that file.
+Suppose we have a video file in a low power machine, a Raspberry Pi or something like that, and we need to do the transcoding from x265 to x264 to make it easier for de Rpi to playback that file.
 The transcoding could take many hours in the Raspberry, but only 5 minutes in another machine in the network.
 To send the video file and ask the other machine to transcode, and send back the transcoded file would need something like:
 ```sh
