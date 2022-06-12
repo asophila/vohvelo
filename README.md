@@ -169,7 +169,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@bicubico](https://twitter.com/bicubico) - bicubico@pm.me
+Your Name - [@bicubico](https://twitter.com/bicubico) - bicubico ARR0BA pm.me
 
 Project Link: [https://github.com/bicubico/vohvelo](https://github.com/bicubico/vohvelo)
 
