@@ -76,7 +76,7 @@ Run your process (with the files needed) on another machine and bring back the r
 ## Getting Started
 
 Just clone the project and run it in your local machine.
-The process to be run must be already installed in the remote machine.
+The process to be run must be already installed on the remote machine.
 
 ### Prerequisites
 
