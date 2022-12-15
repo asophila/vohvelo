@@ -4,7 +4,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/bicubico/vohvelo">
+  <a href="https://github.com/asophila/vohvelo">
     <img src="images/vohvelo-logo.png" alt="Logo" width="300" height="300">
   </a>
 
@@ -89,7 +89,7 @@ What you'll need:
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/bicubico/vohvelo.git
+   git clone https://github.com/asophila/vohvelo.git
    ```
 2. Done
 
@@ -169,9 +169,9 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@bicubico](https://twitter.com/bicubico) - bicubico ARR0BA pm.me
+Your Name - [@asophila](https://lile.cl/asophila) - asophila ARR0BA pm.me
 
-Project Link: [https://github.com/bicubico/vohvelo](https://github.com/bicubico/vohvelo)
+Project Link: [https://github.com/asophila/vohvelo](https://github.com/asophila/vohvelo)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
