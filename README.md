@@ -106,6 +106,7 @@ Vohvelo now supports various options for enhanced functionality::
 ```
 ### Options:
 
+```
 -c, --config <file>: Specify a configuration file (default: ~/.vohvelo.conf)
 -l, --log <file>: Specify a log file (default: vohvelo.log)
 -b, --bandwidth <limit>: Set bandwidth limit for file transfers (e.g., 1m for 1MB/s)
@@ -113,7 +114,7 @@ Vohvelo now supports various options for enhanced functionality::
 -r, --retries <num>: Set number of retries for network operations (default: 3)
 -p, --parallel <num>: Set number of parallel executions (default: 1)
 -h, --help: Display help message
-
+```
 
 Example:
 Suppose we have multiple video files on a low power machine, a Raspberry Pi or something like that, and we need to do the transcoding from x265 to x264 to make it easier for the Rpi to play back those files. 
