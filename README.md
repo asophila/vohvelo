@@ -124,6 +124,8 @@ To send the video files, ask the other machine to transcode, and send back the t
 ```sh
 ./vohvelo.sh -z -p 4 remote_user 192.168.0.45 "ffmpeg -i '\$1' -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k '\$2'" morbius.mkv avengers.mkv thor.mkv output_%d.mp4
 ```
+* Use '\$1' and '\$2' to refer to input and output files respectively.
+* Use %d to parametrize the output file's names.
 
 This will:
 * Copy the original files to the remote machine using the user and host provided
