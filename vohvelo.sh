@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Vohvelo: Advanced Remote Process Execution Script
-# Usage: ./vohvelo.sh [options] <remote user> <remote host> <remote command> <input file> <output file>
+# Usage: ./vohvelo.sh [options] <remote user> <remote host> <remote command> <input file(s)> <output file>
 
 set -e
 
@@ -13,9 +13,24 @@ COMPRESSION=false
 RETRIES=3
 PARALLEL=1
 
+# Configuration file format:
+# The configuration file should be in bash syntax and can set the following variables:
+# LOG_FILE="path/to/logfile"
+# BANDWIDTH_LIMIT="1m"  # Example: 1m for 1MB/s
+# COMPRESSION=true      # or false
+# RETRIES=5
+# PARALLEL=4
+# 
+# Example configuration file content:
+# LOG_FILE="/var/log/vohvelo.log"
+# BANDWIDTH_LIMIT="2m"
+# COMPRESSION=true
+# RETRIES=5
+# PARALLEL=2
+
 # Function to display usage information
 usage() {
-    echo "Usage: $0 [options] <remote user> <remote host> <remote command> <input file> <output file>"
+    echo "Usage: $0 [options] <remote user> <remote host> <remote command> <input file(s)> <output file>"
     echo "Options:"
     echo "  -c, --config <file>     Specify a configuration file (default: $CONFIG_FILE)"
     echo "  -l, --log <file>        Specify a log file (default: $LOG_FILE)"
@@ -80,13 +95,18 @@ if [ $# -lt 5 ]; then
 fi
 
 # Load configuration file if it exists
-[ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+if [ -f "$CONFIG_FILE" ]; then
+    log "Loading configuration from $CONFIG_FILE"
+    source "$CONFIG_FILE"
+else
+    log "No configuration file found at $CONFIG_FILE, using default values"
+fi
 
 # Assign arguments to variables
 user=$1
 host=$2
 remote_cmd=$3
-input_files="${@:4:${#@}-4}"
+input_files=("${@:4:${#@}-4}")
 output_file="${!#}"
 
 # Set flags based on options
@@ -132,11 +152,16 @@ rmtdir=$(ssh -S $ctl $user@$host "mktemp -d /tmp/XXXX")
 log "Created remote temporary directory: $rmtdir"
 
 # Process files in parallel
-echo "$input_files" | xargs -n 1 -P $PARALLEL -I {} bash -c '
-    input="$1"
-    output="${input%.*}_processed.${2##*.}"
-    execute_remote "$input" "$output"
-' _ {} "$output_file"
+for input in "${input_files[@]}"; do
+    output="${input%.*}_processed.${output_file##*.}"
+    execute_remote "$input" "$output" &
+    if [[ $(jobs -r -p | wc -l) -ge $PARALLEL ]]; then
+        wait -n
+    fi
+done
+
+# Wait for all background jobs to finish
+wait
 
 log "Cleaning up remote temporary directory"
 ssh -S $ctl $user@$host "rm -rf '$rmtdir'"
