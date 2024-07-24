@@ -116,6 +116,16 @@ Vohvelo now supports various options for enhanced functionality::
 -h, --help: Display help message
 ```
 
+### Config file format:
+
+```
+LOG_FILE="/var/log/vohvelo.log"
+BANDWIDTH_LIMIT="2m"
+COMPRESSION=true
+RETRIES=5
+PARALLEL=2
+```
+
 Example:
 Suppose we have multiple video files on a low power machine, a Raspberry Pi or something like that, and we need to do the transcoding from x265 to x264 to make it easier for the Rpi to play back those files. 
 The transcoding could take many hours on the Raspberry, but only a few minutes on another machine in the network. 
@@ -186,7 +196,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@asophila](https://lile.cl/asophila) - asophila ARR0BA pm.me
+Alejandro Sophila - [@asophila](https://lile.cl/asophila) 
 
 Project Link: [https://github.com/asophila/vohvelo](https://github.com/asophila/vohvelo)
 
