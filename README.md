@@ -100,23 +100,49 @@ What you'll need:
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Usage is simple:
+Vohvelo now supports various options for enhanced functionality::
 ```sh
-./vohvelo.sh <file to process> <remote user> <remote host> <local output filename>
+./vohvelo.sh [options] <remote user> <remote host> <remote command> <input file(s)> <output file>
+```
+### Options:
+
+```
+-c, --config <file>: Specify a configuration file (default: ~/.vohvelo.conf)
+-l, --log <file>: Specify a log file (default: vohvelo.log)
+-b, --bandwidth <limit>: Set bandwidth limit for file transfers (e.g., 1m for 1MB/s)
+-z, --compress: Enable compression for file transfers
+-r, --retries <num>: Set number of retries for network operations (default: 3)
+-p, --parallel <num>: Set number of parallel executions (default: 1)
+-h, --help: Display help message
+```
+
+### Config file format:
+
+```
+LOG_FILE="/var/log/vohvelo.log"
+BANDWIDTH_LIMIT="2m"
+COMPRESSION=true
+RETRIES=5
+PARALLEL=2
 ```
 
 Example:
-Suppose we have a video file in a low power machine, a Raspberry Pi or something like that, and we need to do the transcoding from x265 to x264 to make it easier for de Rpi to playback that file.
-The transcoding could take many hours in the Raspberry, but only 5 minutes in another machine in the network.
-To send the video file and ask the other machine to transcode, and send back the transcoded file would need something like:
+Suppose we have multiple video files on a low power machine, a Raspberry Pi or something like that, and we need to do the transcoding from x265 to x264 to make it easier for the Rpi to play back those files. 
+The transcoding could take many hours on the Raspberry, but only a few minutes on another machine in the network. 
+To send the video files, ask the other machine to transcode, and send back the transcoded files, you would use something like:
+
 ```sh
-./vohvelo.sh morbius.mkv remote_user 192.168.0.45 morbius.mp4
+./vohvelo.sh -z -p 4 remote_user 192.168.0.45 "ffmpeg -i '\$1' -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k '\$2'" morbius.mkv avengers.mkv thor.mkv output_%d.mp4
 ```
+* Use '\$1' and '\$2' to refer to input and output files respectively.
+* Use %d to parametrize the output file's names.
+
 This will:
-* Copy the original file to the remote machine using the user and host provided
-* Trigger the ffmpeg transcoding process (currently the process is hardcoded, maybe later we could make it run anything)
+* Copy the original files to the remote machine using the user and host provided
+* Trigger the ffmpeg transcoding process for each file (up to 4 in parallel)
+* Use compression for file transfers
 * Wait for the transcoding to finish
-* Copy the resulting file back to the local machine
+* Copy the resulting files back to the local machine
 * Cleanup the remote folders
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -125,13 +151,14 @@ This will:
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Process files with full input and output paths
-- [ ] Accept filenames containing spaces
-- [ ] Accept any process (with arguments) as an input
-    - [ ] Recognize filenames in the command
-    - [ ] Check if those filenames exist as files in the local machine
-    - [ ] Copy those files to the remote machine
-    - [ ] Identify non existant files in the command as output filenames
+- [x] Process files with full input and output paths
+- [x] Accept filenames containing spaces
+- [x] Add Parallel processing support
+- [x] Compress files for transfer
+- [x] Add logging system
+- [x] Add config files for default options
+- [x] Add bandwitdht limits
+- [x] Accept any process (with arguments) as an input
 
 See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
 
@@ -169,7 +196,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@asophila](https://lile.cl/asophila) - asophila ARR0BA pm.me
+Alejandro Sophila - [@asophila](https://lile.cl/asophila) 
 
 Project Link: [https://github.com/asophila/vohvelo](https://github.com/asophila/vohvelo)
 
