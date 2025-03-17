@@ -138,7 +138,7 @@ setup_ssh_connection() {
     ctl="$sshfifos/$connection_user@$connection_host:22"
     
     # Setup trap to close SSH connection on exit
-    trap 'cleanup_ssh_connection "$connection_user" "$connection_host"' EXIT
+    trap 'cleanup_ssh_connection "$connection_user" "$connection_host"' EXIT INT TERM
     
     # Start SSH control connection
     if ! ssh -fNMS "$ctl" "$connection_user@$connection_host"; then
@@ -150,13 +150,20 @@ setup_ssh_connection() {
 
 # Function to cleanup SSH connection
 cleanup_ssh_connection() {
+    # Check if we have the required parameters
+    if [[ $# -lt 2 ]]; then
+        [[ -n "${ctl:-}" ]] && rm -f "$ctl" 2>/dev/null
+        return 0
+    fi
+
     local connection_user="$1"
     local connection_host="$2"
     local socket="$sshfifos/$connection_user@$connection_host:22"
     
     if [[ -e "$socket" ]]; then
         ssh -S "$socket" -O exit "$connection_user@$connection_host" 2>/dev/null || true
-        success "SSH connection closed"
+        rm -f "$socket" 2>/dev/null
+        [[ "$quiet_mode" != true ]] && success "SSH connection closed"
     fi
 }
 
