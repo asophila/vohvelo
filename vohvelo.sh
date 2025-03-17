@@ -258,10 +258,18 @@ run_interactive_mode() {
         local default_host="${last_host:-}"
         local host
         if [[ -n "$default_host" ]]; then
-            read -p "Remote host [$default_host] (e.g., user@hostname): " host
-            host="${host:-$default_host}"
+            read -p "Remote host [$default_host] (e.g., user@hostname): " host_input
+            host="${host_input:-$default_host}"
         else
-            read -p "Remote host (e.g., user@hostname): " host
+            read -p "Remote host (e.g., user@hostname): " host_input
+            host="$host_input"
+        fi
+        
+        # Clean up host input
+        host=$(echo "$host" | tr -d '[:space:]')
+        if [[ ! "$host" =~ ^[^@]+@[^@]+$ ]]; then
+            echo -e "${RED}Error: Invalid host format. Must be 'user@hostname'${NC}"
+            continue
         fi
         last_host="$host"
         
@@ -296,12 +304,19 @@ run_interactive_mode() {
             read -p "Output file #$file_num: " output
             [[ -z "$output" ]] && break
             
+            # Validate output filename
+            if [[ "$output" =~ [^a-zA-Z0-9._/-] ]]; then
+                echo -e "${YELLOW}Warning: Output file contains invalid characters${NC}"
+                continue
+            fi
+            
             # Check for duplicates
             if [[ " ${seen_outputs[*]} " =~ " ${output} " ]]; then
                 echo -e "${YELLOW}Warning: Output file '$output' already added${NC}"
                 continue
             fi
             
+            # Add output file
             outputs+=("$output")
             seen_outputs+=("$output")
             ((file_num++))
@@ -410,7 +425,7 @@ process_job() {
     
     # Execute remote process
     [[ "$quiet_mode" != true ]] && echo "Starting remote process..."
-    if ! ssh -S "$ctl" "$job_user@$job_hostname" "$modified_job_command"; then
+    if ! ssh -S "$ctl" "$job_user@$job_hostname" "bash -c '$modified_job_command'"; then
         error "Remote process failed"
         return 1
     fi
