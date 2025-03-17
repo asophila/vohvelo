@@ -62,8 +62,6 @@
 - bash
 - ssh
 - scp
-- readlink
-- xxd
 
 ## 🚀 Basic Usage
 
@@ -100,45 +98,95 @@ vohvelo.sh -i input.txt -o output.txt -h user@host -c "sort input.txt > output.t
 
 ### Interactive Mode
 
-The interactive mode provides a guided experience for creating and managing jobs:
-```bash
-vohvelo.sh --interactive
+The interactive mode (`-I` or `--interactive`) provides a guided interface for creating and running jobs:
+
+```
+Vohvelo Interactive Job Creator v1.0.0
+-----------------------------------
+
+Job #1:
+
+Remote Host
+Format: user@hostname (e.g., jetson@192.168.1.100)
+This is the remote machine where the command will be executed.
+Remote host: jetson@192.168.31.217
+
+Input Files
+These files will be copied to the remote machine before execution.
+Examples: video.mkv (for transcoding), data.csv (for processing)
+Press enter without typing anything when done adding files.
+Input file #1: 
+
+Output Files
+These files will be copied back after command execution.
+Examples: output.mp4 (transcoded video), results.txt (command output)
+Press enter without typing anything when done adding files.
+Output file #1: list.txt
+Output file #2: 
+
+Remote Command
+The command to execute on the remote machine.
+Examples:
+  ls -la > list.txt              (list directory contents)
+  ffmpeg -i in.mkv out.mp4       (transcode video)
+  python3 script.py data.csv     (process data)
+Command: ls > list.txt
+
+Job created:
+vohvelo.sh \
+  -o "list.txt" \
+  -h "jetson@192.168.31.217" \
+  -c "ls > list.txt"
 ```
 
-Each job creation step includes:
+**Features:**
 
-1. **Remote Host Configuration**
-   - Format: user@hostname (e.g., jetson@192.168.1.100)
-   - Clear validation and error messages
-   - Previous host remembered for convenience
+1. **Step-by-Step Job Creation**
+   - Guided prompts for each component
+   - Clear examples and explanations
+   - Input validation and error handling
+   - Command syntax assistance
 
-2. **Input Files Selection**
-   - Add multiple input files to be processed
-   - File existence validation
-   - Examples for different use cases:
-     * video.mkv (for transcoding)
-     * data.csv (for processing)
-     * script.py (for execution)
+2. **Multiple Job Support**
+   ```
+   Add another job? [y/N]: 
+   
+   Job Queue Summary
+   ----------------
+   Job #1: pending
+   
+   Run jobs now? [Y/n]: 
+   ```
+   - Create multiple jobs in one session
+   - Review job queue before execution
+   - Execute all jobs sequentially
 
-3. **Output Files Definition**
-   - Specify files to retrieve after execution
-   - Duplicate detection and validation
-   - Examples for common scenarios:
-     * output.mp4 (transcoded video)
-     * results.txt (command output)
-     * processed.csv (data results)
-
-4. **Command Configuration**
-   - Clear examples for different operations:
-     * `ls -la > list.txt` (list directory contents)
-     * `ffmpeg -i in.mkv out.mp4` (transcode video)
-     * `python3 script.py data.csv` (process data)
-
-5. **Job Management**
-   - Review job configuration before execution
-   - Add multiple jobs to the queue
-   - Monitor job status and progress
+3. **Real-Time Feedback**
+   ```
+   Running Job #1
+   SSH connection established
+   Starting remote process...
+   Remote process completed
+   
+   Command output:
+   [Directory listing appears here]
+   
+   Copying result from remote host...
+   File retrieved successfully
+   ```
    - See command output in real-time
+   - Track job progress
+   - View execution results
+
+4. **Job Status Tracking**
+   ```
+   Final Job Status
+   ---------------
+   Job #1: completed
+   ```
+   - Monitor job completion
+   - See final execution status
+   - Handle multiple job results
 
 ### Job Queue Management
 
