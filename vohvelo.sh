@@ -219,10 +219,16 @@ cleanup_remote_dir() {
 
 # Function to create a new job
 create_job() {
-    local -a job_inputs=("$1")
-    local -a job_outputs=("$2")
-    local job_host="$3"
-    local job_command="$4"
+    local -a job_inputs
+    local -a job_outputs
+    local job_host
+    local job_command
+    
+    # Parse input arrays
+    eval "job_inputs=($1)"  # Expand the space-separated list into an array
+    eval "job_outputs=($2)" # Expand the space-separated list into an array
+    job_host="$3"
+    job_command="$4"
     
     # Create job definition
     local job="job_inputs=(${job_inputs[*]}); job_outputs=(${job_outputs[*]}); job_host=$job_host; job_command=$job_command"
@@ -313,10 +319,23 @@ run_interactive_mode() {
 
 # Function to process a single job
 process_job() {
-    local -a job_inputs=("$1")
-    local -a job_outputs=("$2")
-    local job_host="$3"
-    local job_command="$4"
+    local -a job_inputs
+    local -a job_outputs
+    local job_host
+    local job_command
+    
+    # Parse input arrays
+    eval "job_inputs=($1)"  # Expand the space-separated list into an array
+    eval "job_outputs=($2)" # Expand the space-separated list into an array
+    job_host="$3"
+    job_command="$4"
+    
+    [[ "$debug_mode" == true ]] && {
+        echo "Input files: ${job_inputs[*]}"
+        echo "Output files: ${job_outputs[*]}"
+        echo "Host: $job_host"
+        echo "Command: $job_command"
+    }
     
     # Split host into user and hostname
     local job_user job_hostname
