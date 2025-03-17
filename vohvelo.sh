@@ -138,8 +138,7 @@ setup_ssh_connection() {
     ctl="$sshfifos/$connection_user@$connection_host:22"
     
     # Setup trap to close SSH connection on exit
-    local connection_info="$connection_user@$connection_host"
-    trap 'cleanup_ssh_connection "$connection_info"' EXIT INT TERM
+    trap 'cleanup_ssh_connection' EXIT INT TERM
     
     # Start SSH control connection
     if ! ssh -fNMS "$ctl" "$connection_user@$connection_host"; then
@@ -151,24 +150,21 @@ setup_ssh_connection() {
 
 # Function to cleanup SSH connection
 cleanup_ssh_connection() {
-    local connection_info="$1"
-    
-    if [[ -z "$connection_info" ]]; then
-        [[ -n "${ctl:-}" ]] && rm -f "$ctl" 2>/dev/null
-        return 0
+    if [[ -n "${ctl:-}" ]]; then
+        # Extract connection info from ctl path
+        local connection_info
+        connection_info=$(basename "$ctl" | sed 's/:22$//')
+        
+        if [[ -e "$ctl" ]]; then
+            # Close the connection
+            ssh -S "$ctl" -O exit "$connection_info" 2>/dev/null || true
+            rm -f "$ctl" 2>/dev/null
+            [[ "$quiet_mode" != true ]] && success "SSH connection closed"
+        fi
+        
+        # Clear the global ctl variable
+        ctl=""
     fi
-    
-    local socket="$sshfifos/$connection_info:22"
-    
-    if [[ -e "$socket" ]]; then
-        # Close the connection
-        ssh -S "$socket" -O exit "$connection_info" 2>/dev/null || true
-        rm -f "$socket" 2>/dev/null
-        [[ "$quiet_mode" != true ]] && success "SSH connection closed"
-    fi
-    
-    # Clear the global ctl variable
-    ctl=""
 }
 
 # Function to create remote temporary directory
