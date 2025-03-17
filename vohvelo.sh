@@ -325,7 +325,14 @@ run_interactive_mode() {
         # Get command
         echo -e "\nCommand to run on remote host:"
         echo "Examples: ls -la, python3 script.py, ffmpeg -i input.mp4 output.mp4"
-        read -p "Command: " command
+        read -p "Command: " command_input
+        
+        # Clean up command input
+        command=$(echo "$command_input" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        if [[ -z "$command" ]]; then
+            echo -e "${RED}Error: Command cannot be empty${NC}"
+            continue
+        fi
         
         # Show command preview
         echo -e "\nJob created:"
@@ -425,7 +432,7 @@ process_job() {
     
     # Execute remote process
     [[ "$quiet_mode" != true ]] && echo "Starting remote process..."
-    if ! ssh -S "$ctl" "$job_user@$job_hostname" "bash -c '$modified_job_command'"; then
+    if ! ssh -S "$ctl" "$job_user@$job_hostname" bash -c "'$modified_job_command'"; then
         error "Remote process failed"
         return 1
     fi
