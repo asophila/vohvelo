@@ -161,8 +161,18 @@ cleanup_ssh_connection() {
     local socket="$sshfifos/$connection_user@$connection_host:22"
     
     if [[ -e "$socket" ]]; then
+        # Store the socket path before closing connection
+        local current_socket="$socket"
+        
+        # Close the connection
         ssh -S "$socket" -O exit "$connection_user@$connection_host" 2>/dev/null || true
-        rm -f "$socket" 2>/dev/null
+        
+        # Remove the socket file
+        rm -f "$current_socket" 2>/dev/null
+        
+        # Clear the global ctl variable
+        ctl=""
+        
         [[ "$quiet_mode" != true ]] && success "SSH connection closed"
     fi
 }
