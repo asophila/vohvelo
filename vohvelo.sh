@@ -432,7 +432,8 @@ process_job() {
     
     # Execute remote process
     [[ "$quiet_mode" != true ]] && echo "Starting remote process..."
-    if ! ssh -S "$ctl" "$job_user@$job_hostname" /bin/bash -c "set -e; $modified_job_command"; then
+    local remote_script="function run_command() { $modified_job_command; }; run_command"
+    if ! ssh -S "$ctl" "$job_user@$job_hostname" /bin/bash -c "$remote_script"; then
         error "Remote process failed"
         return 1
     fi
