@@ -345,6 +345,12 @@ run_interactive_mode() {
             continue
         fi
         
+        # Fix common command mistakes
+        if [[ "$command" =~ "<" || "$command" =~ ">" ]]; then
+            command=$(echo "$command" | sed 's/[<>]\+/>/g' | sed 's/> *>/>/g')
+            echo -e "${YELLOW}Note: Fixed redirection syntax to: $command${NC}"
+        fi
+        
         # Show command preview
         echo -e "\nJob created:"
         echo "$SCRIPT_NAME \\"
@@ -444,7 +450,7 @@ process_job() {
     # Execute remote process
     [[ "$quiet_mode" != true ]] && echo "Starting remote process..."
     local output
-    if ! output=$(ssh -S "$ctl" "$job_user@$job_hostname" "$modified_job_command" 2>&1); then
+    if ! output=$(ssh -S "$ctl" "$job_user@$job_hostname" /bin/bash -c "$modified_job_command" 2>&1); then
         error "Remote process failed: $output"
         return 1
     fi
