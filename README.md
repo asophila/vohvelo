@@ -1,215 +1,243 @@
-# vohvelo
-<div id="top"></div>
+# 🚀 Vohvelo
 
-<!-- PROJECT LOGO -->
-<br />
-<div align="center">
-  <a href="https://github.com/asophila/vohvelo">
-    <img src="images/vohvelo-logo.png" alt="Logo" width="300" height="300">
-  </a>
+![Vohvelo Logo](images/vohvelo-logo.png)
 
-<h3 align="center">VOHVELO</h3>
+> Vohvelo [βo̞ʰ ve̞lo̞ʰ] is a powerful tool for executing processes on remote machines. It automates the entire workflow of file transfers, remote execution, and result retrieval, making distributed processing seamless and efficient.
 
-  <p align="center">
-    Vohvelo [βo̞ʰ ve̞lo̞ʰ] is a robust tool for running processes on remote machines. While SSH makes it easy to run commands remotely, Vohvelo automates the entire workflow of copying files, executing processes, and retrieving results, making remote processing seamless and efficient.
-    <br />
-    The original use case comes from transcoding video from x265 to x264 on a Raspberry Pi, where offloading the process to a more powerful machine significantly reduces processing time.
-    <br />
-    <a href="https://github.com/bicubico/vohvelo"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/bicubico/vohvelo">View Demo</a>
-    ·
-    <a href="https://github.com/bicubico/vohvelo/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/bicubico/vohvelo/issues">Request Feature</a>
-  </p>
-</div>
+## 📖 Table of Contents
+- [Features](#-features)
+- [Installation](#-installation)
+- [Basic Usage](#-basic-usage)
+- [Advanced Usage](#-advanced-usage)
+  - [Video Processing](#video-processing)
+  - [Data Processing](#data-processing)
+  - [Multiple Files](#multiple-files)
+  - [Debug Mode](#debug-mode)
+- [Command Reference](#-command-reference)
+- [Use Cases](#-use-cases)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#key-features">Key Features</a></li>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#examples">Examples</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ol>
-</details>
+## ✨ Features
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
-
-https://user-images.githubusercontent.com/5770504/173208139-d86893e6-f79f-4e42-938e-6647acd77cce.mp4
-
-Vohvelo simplifies the process of running tasks on remote machines by handling all the necessary steps:
-1. Securely copying input files to the remote machine
-2. Executing any command remotely
-3. Retrieving the results back to your local machine
-4. Cleaning up temporary files on the remote host
-
-### Key Features
-
-- **Flexible Command Execution**: Run any command on the remote machine
+- **Universal Command Execution**: Run any command on remote machines
 - **Multiple File Support**: Handle multiple input and output files
-- **Robust Error Handling**: Comprehensive error checking and meaningful error messages
-- **Path Support**: Handles both relative and absolute paths for input/output files
-- **Space-Safe**: Properly handles filenames containing spaces and special characters
-- **Secure**: Uses SSH for secure file transfers and remote execution
-- **Clean**: Automatically manages temporary files and connections
+- **Robust Error Handling**: Comprehensive validation and error messages
+- **Path Flexibility**: Support for both relative and absolute paths
+- **Space-Safe**: Properly handle filenames containing spaces
+- **Secure**: Use SSH for secure file transfers and execution
+- **Clean**: Automatic temporary file management
 - **User-Friendly**: Colored output and progress indicators
-- **Efficient**: Uses SSH control connections for faster operations
-- **Debug Mode**: Optional detailed progress information
+- **Efficient**: SSH control connections for faster operations
+- **Debug Mode**: Detailed progress information for troubleshooting
 
-### Built With
+## 📥 Installation
 
-- Bash
-- SSH/SCP for secure remote operations
-- Standard Unix tools
-
-<!-- GETTING STARTED -->
-## Getting Started
-
-To get started with Vohvelo, follow these simple steps.
-
-### Prerequisites
-
-The following tools must be installed on your local machine:
-* bash
-* ssh
-* scp
-* readlink (for path resolution)
-* xxd (for random filename generation)
-
-Any commands you want to run must be installed on the remote machine.
-
-### Installation
-
-1. Clone the repo
-   ```sh
-   git clone https://github.com/asophila/vohvelo.git
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/bicubico/vohvelo.git
+   cd vohvelo
    ```
-2. Make the script executable
-   ```sh
+
+2. Make the script executable:
+   ```bash
    chmod +x vohvelo.sh
    ```
-3. Optionally, move to your PATH
-   ```sh
+
+3. (Optional) Add to your PATH:
+   ```bash
    sudo cp vohvelo.sh /usr/local/bin/vohvelo
    ```
 
-<!-- USAGE -->
-## Usage
+### Prerequisites
 
-```sh
+- bash
+- ssh
+- scp
+- readlink
+- xxd
+
+## 🚀 Basic Usage
+
+The basic syntax is:
+```bash
 vohvelo.sh [options] <remote_user> <remote_host> <command> [args...]
 ```
 
-### Arguments
-
-- `remote_user`: Username for SSH connection
-- `remote_host`: Remote hostname or IP address
-- `command`: Command to execute on the remote machine
-- `args`: Arguments for the command (including input/output files)
-
 ### Options
-
-- `-h, --help`: Show help message and exit
-- `-v, --version`: Show version information and exit
+- `-h, --help`: Show help message
+- `-v, --version`: Show version information
 - `-i FILE`: Input file to copy to remote machine
-- `-o FILE`: Output file to copy back from remote machine
-- `-d`: Debug mode (show detailed progress)
+- `-o FILE`: Output file to copy back
+- `-d`: Debug mode for detailed progress
 
-<!-- EXAMPLES -->
-## Examples
+### Simple Example
+```bash
+# Run a command on remote machine
+vohvelo.sh user remote-host "ls -la"
 
-### Video Transcoding
-Process a video file on a remote machine:
-```sh
-./vohvelo.sh -i "My Video.mkv" -o "Processed Video.mp4" \
-  user 192.168.0.45 \
-  ffmpeg -i "My Video.mkv" -vcodec libx264 "Processed Video.mp4"
+# Process a file and get results
+vohvelo.sh -i input.txt -o output.txt user remote-host "sort input.txt > output.txt"
 ```
 
-### Multiple Input Files
-Process multiple files:
-```sh
-./vohvelo.sh -i file1.txt -i file2.txt -o result.txt \
-  user media-server.local \
-  "cat file1.txt file2.txt > result.txt"
-```
+## 🔧 Advanced Usage
 
-### Simple Remote Commands
-Run commands without file transfers:
-```sh
-./vohvelo.sh user host "ls -la"
-./vohvelo.sh user host "df -h"
-```
+### Video Processing
 
-### Using Debug Mode
-Get detailed progress information:
-```sh
-./vohvelo.sh -d -i input.dat -o output.dat \
+1. Basic Video Transcoding
+   ```bash
+   vohvelo.sh -i video.mkv -o output.mp4 user host \
+     "ffmpeg -i video.mkv -c:v libx264 -preset medium output.mp4"
+   ```
+
+2. Complex Video Processing
+   ```bash
+   vohvelo.sh -i input.mp4 -o output.mp4 user host \
+     'ffmpeg -i input.mp4 -vf "scale=1920:1080,fps=30" \
+     -c:v libx264 -preset slow -crf 22 \
+     -c:a aac -b:a 128k output.mp4'
+   ```
+
+3. Batch Processing with Debug Info
+   ```bash
+   vohvelo.sh -d \
+     -i video1.mp4 -i video2.mp4 \
+     -o processed1.mp4 -o processed2.mp4 \
+     user host \
+     './process_videos.sh video1.mp4 video2.mp4'
+   ```
+
+### Data Processing
+
+1. Text File Processing
+   ```bash
+   vohvelo.sh \
+     -i data.csv -i config.json \
+     -o results.csv \
+     user host \
+     "python3 process_data.py data.csv config.json results.csv"
+   ```
+
+2. Image Processing
+   ```bash
+   vohvelo.sh \
+     -i "input folder/image.jpg" \
+     -o "processed/result.png" \
+     user host \
+     "convert 'input folder/image.jpg' -resize 50% 'processed/result.png'"
+   ```
+
+### Multiple Files
+
+1. Merge and Process
+   ```bash
+   vohvelo.sh \
+     -i part1.txt -i part2.txt -i part3.txt \
+     -o merged.txt -o stats.json \
+     user host \
+     "cat part*.txt > merged.txt && analyze_text.py merged.txt stats.json"
+   ```
+
+2. Parallel Processing
+   ```bash
+   vohvelo.sh \
+     -i dataset.csv -i script.R \
+     -o plot1.pdf -o plot2.pdf -o stats.txt \
+     user host \
+     "Rscript script.R dataset.csv"
+   ```
+
+### Debug Mode
+
+Enable detailed progress information:
+```bash
+vohvelo.sh -d \
+  -i large_file.dat -o results.dat \
   user host \
-  "./process_data input.dat output.dat"
+  "./process_data large_file.dat results.dat"
 ```
 
-<!-- ROADMAP -->
-## Roadmap
+## 📚 Command Reference
 
-- [x] Handle filenames with spaces
-- [x] Support full input/output paths
-- [x] Add proper error handling
-- [x] Accept any process (with arguments) as input
-    - [x] Support multiple input files
-    - [x] Support multiple output files
-    - [x] Handle command path substitution
-- [ ] Add progress indicators for file transfers
-- [ ] Add configuration file support
-- [ ] Add parallel processing support
+### Command Structure
+```bash
+vohvelo.sh [options] <remote_user> <remote_host> <command>
 
-See the [open issues](https://github.com/bicubico/vohvelo/issues) for a full list of proposed features (and known issues).
+Options:
+  -h, --help              Show this help message
+  -v, --version           Show version information
+  -i FILE                 Input file (can be used multiple times)
+  -o FILE                 Output file (can be used multiple times)
+  -d                      Enable debug mode
 
-<!-- CONTRIBUTING -->
-## Contributing
+Arguments:
+  remote_user             Username for SSH connection
+  remote_host             Hostname or IP address
+  command                 Command to execute remotely
+```
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+### Path Handling
+- Relative paths are resolved from the current directory
+- Absolute paths are preserved
+- Spaces in paths are handled automatically
+- Remote paths are managed in a temporary directory
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
+## 🎯 Use Cases
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
+### 1. High-Performance Computing
+Offload intensive computations to more powerful machines:
+```bash
+vohvelo.sh \
+  -i dataset.h5 -i analysis.py \
+  -o results.h5 -o plots.pdf \
+  user powerful-server \
+  "python3 analysis.py dataset.h5 results.h5 plots.pdf"
+```
+
+### 2. Media Processing
+Transform media files using remote resources:
+```bash
+vohvelo.sh \
+  -i raw.mkv \
+  -o compressed.mp4 -o thumbnail.jpg \
+  user media-server \
+  'ffmpeg -i raw.mkv -vf "thumbnail" thumbnail.jpg && \
+   ffmpeg -i raw.mkv -c:v libx264 compressed.mp4'
+```
+
+### 3. Distributed Processing
+Process parts of data on different machines:
+```bash
+vohvelo.sh \
+  -i chunk1.dat -i processor.py \
+  -o processed1.dat \
+  user compute-node-1 \
+  "python3 processor.py chunk1.dat processed1.dat"
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. Fork the repository
+2. Create a feature branch
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. Commit your changes
+   ```bash
+   git commit -m 'Add amazing feature'
+   ```
+4. Push to your branch
+   ```bash
+   git push origin feature/amazing-feature
+   ```
 5. Open a Pull Request
 
-<!-- LICENSE -->
-## License
+## 📄 License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
-<!-- CONTACT -->
-## Contact
+---
 
-Your Name - [@asophila](https://lile.cl/asophila) - asophila ARR0BA pm.me
-
-Project Link: [https://github.com/asophila/vohvelo](https://github.com/asophila/vohvelo)
-
-<p align="right">(<a href="#top">back to top</a>)</p>
+**Project Link**: [https://github.com/bicubico/vohvelo](https://github.com/bicubico/vohvelo)
