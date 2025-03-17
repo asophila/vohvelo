@@ -219,29 +219,25 @@ cleanup_remote_dir() {
 
 # Function to create a new job
 create_job() {
-    local -a job_inputs
-    local -a job_outputs
+    local -a job_inputs=()
+    local -a job_outputs=()
     local job_host
     local job_command
     
     # Parse input arrays
     if [[ -n "${1:-}" ]]; then
-        eval "job_inputs=($1)"  # Expand the space-separated list into an array
-    else
-        job_inputs=()
+        read -r -a job_inputs <<< "$1"
     fi
     
     if [[ -n "${2:-}" ]]; then
-        eval "job_outputs=($2)" # Expand the space-separated list into an array
-    else
-        job_outputs=()
+        read -r -a job_outputs <<< "$2"
     fi
     
     job_host="${3:-}"
     job_command="${4:-}"
     
     # Create job definition
-    local job="job_inputs=(${job_inputs[*]}); job_outputs=(${job_outputs[*]}); job_host=$job_host; job_command=$job_command"
+    local job="job_inputs=(${job_inputs[*]:-}); job_outputs=(${job_outputs[*]:-}); job_host=$job_host; job_command=$job_command"
     job_queue+=("$job")
     job_status["${#job_queue[@]}-1"]="pending"
 }
@@ -307,7 +303,7 @@ run_interactive_mode() {
         echo "  -c \"$command\""
         
         # Create job
-        create_job "${inputs[@]}" "${outputs[@]}" "$host" "$command"
+        create_job "${inputs[*]:-}" "${outputs[*]:-}" "$host" "$command"
         
         # Ask to add another job
         read -p $'\nAdd another job? [y/N]: ' add_another
@@ -329,20 +325,26 @@ run_interactive_mode() {
 
 # Function to process a single job
 process_job() {
-    local -a job_inputs
-    local -a job_outputs
+    local -a job_inputs=()
+    local -a job_outputs=()
     local job_host
     local job_command
     
     # Parse input arrays
-    eval "job_inputs=($1)"  # Expand the space-separated list into an array
-    eval "job_outputs=($2)" # Expand the space-separated list into an array
-    job_host="$3"
-    job_command="$4"
+    if [[ -n "${1:-}" ]]; then
+        read -r -a job_inputs <<< "$1"
+    fi
+    
+    if [[ -n "${2:-}" ]]; then
+        read -r -a job_outputs <<< "$2"
+    fi
+    
+    job_host="${3:-}"
+    job_command="${4:-}"
     
     [[ "$debug_mode" == true ]] && {
-        echo "Input files: ${job_inputs[*]}"
-        echo "Output files: ${job_outputs[*]}"
+        echo "Input files: ${job_inputs[*]:-}"
+        echo "Output files: ${job_outputs[*]:-}"
         echo "Host: $job_host"
         echo "Command: $job_command"
     }
@@ -418,7 +420,7 @@ run_job_queue() {
         eval "${job_queue[$i]}"
         
         # Run the job
-        if process_job "${job_inputs[@]}" "${job_outputs[@]}" "$job_host" "$job_command"; then
+        if process_job "${job_inputs[*]:-}" "${job_outputs[*]:-}" "$job_host" "$job_command"; then
             job_status[$i]="completed"
             echo -e "${GREEN}Job #$((i+1)) completed successfully${NC}"
         else
@@ -548,7 +550,7 @@ for file in "${output_files[@]}"; do
 done
 
 # Process the job
-if process_job "${input_files[@]}" "${output_files[@]}" "$host" "$command"; then
+if process_job "${input_files[*]:-}" "${output_files[*]:-}" "$host" "$command"; then
     success "Process completed successfully"
     if [[ ${#output_files[@]} -gt 0 ]]; then
         echo "Output files:"
