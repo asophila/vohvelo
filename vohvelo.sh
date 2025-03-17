@@ -14,7 +14,16 @@ SCRIPT_NAME=$(basename "$0")
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Global variables
+declare -g sshfifos  # SSH control socket directory
+declare -g ctl       # Current SSH control socket path
+
+# Job queue
+declare -a job_queue=()
+declare -A job_status=()
 
 # Function to display error messages
 error() {
@@ -35,32 +44,40 @@ success() {
 # Function to display usage information
 show_usage() {
     cat << EOF
-Usage: $SCRIPT_NAME [options] <remote_user> <remote_host> <command> [args...]
-
-Executes a command on a remote machine and retrieves the results.
-
-Arguments:
-  remote_user   Username for SSH connection
-  remote_host   Remote hostname or IP address
-  command       Command to execute on the remote machine
-  args          Arguments for the command (including input/output files)
+Usage: $SCRIPT_NAME [options]
 
 Options:
-  -h, --help    Show this help message and exit
-  -v, --version Show version information and exit
-  -i FILE       Input file to copy to remote machine
-  -o FILE       Output file to copy back from remote machine
-  -d            Debug mode (show detailed progress)
+  -i, --input FILE      Input file to copy to remote machine (can be used multiple times)
+  -o, --output FILE     Output file to copy back (can be used multiple times)
+  -h, --host HOST       Remote host in user@hostname format
+  -c, --command CMD     Command to execute on the remote machine
+  -I, --interactive     Enter interactive job creation mode
+  -d, --debug          Enable debug mode
+  -q, --quiet          Suppress progress output
+  -j, --job-file FILE  Load job definition from file
+  -s, --save-job FILE  Save job definition to file for later use
+  -p, --parallel N     Run up to N jobs in parallel (default: 1)
+  -w, --wait           Wait for all jobs to complete before exiting
+      --help           Show this help message and exit
+  -v, --version        Show version information and exit
 
 Examples:
-  # Transcode a video file
-  $SCRIPT_NAME -i video.mkv -o output.mp4 user host ffmpeg -i video.mkv -vcodec libx264 output.mp4
+  # Basic command execution
+  $SCRIPT_NAME -h user@host -c "ls -la"
 
-  # Process multiple input files
-  $SCRIPT_NAME -i file1.txt -i file2.txt -o result.txt user host "cat file1.txt file2.txt > result.txt"
+  # Process a file
+  $SCRIPT_NAME -i input.txt -o output.txt -h user@host -c "sort input.txt > output.txt"
 
-  # Run any command
-  $SCRIPT_NAME user host "ls -la"
+  # Video transcoding
+  $SCRIPT_NAME -i video.mkv -o video.mp4 -h user@host \\
+    -c "ffmpeg -i video.mkv -c:v libx264 video.mp4"
+
+  # Multiple input files
+  $SCRIPT_NAME -i file1.txt -i file2.txt -o result.txt -h user@host \\
+    -c "cat file1.txt file2.txt > result.txt"
+
+  # Interactive job creation
+  $SCRIPT_NAME --interactive
 
 Note: Both relative and absolute paths are supported for input and output files.
 EOF
@@ -109,8 +126,8 @@ validate_output_path() {
 
 # Function to setup SSH control connection
 setup_ssh_connection() {
-    local user="$1"
-    local host="$2"
+    local connection_user="$1"
+    local connection_host="$2"
     
     # Setup SSH control socket directory
     sshfifos=~/.ssh/controlmasters
@@ -118,14 +135,14 @@ setup_ssh_connection() {
     chmod 755 "$sshfifos"
     
     # Create control socket path
-    ctl="$sshfifos/$user@$host:22"
+    ctl="$sshfifos/$connection_user@$connection_host:22"
     
     # Setup trap to close SSH connection on exit
-    trap 'cleanup_ssh_connection' EXIT
+    trap 'cleanup_ssh_connection "$connection_user" "$connection_host"' EXIT
     
     # Start SSH control connection
-    if ! ssh -fNMS "$ctl" "$user@$host"; then
-        error "Failed to establish SSH connection to $user@$host"
+    if ! ssh -fNMS "$ctl" "$connection_user@$connection_host"; then
+        error "Failed to establish SSH connection to $connection_user@$connection_host"
     fi
     
     success "SSH connection established"
@@ -133,31 +150,35 @@ setup_ssh_connection() {
 
 # Function to cleanup SSH connection
 cleanup_ssh_connection() {
-    if [[ -n "${ctl:-}" ]]; then
-        ssh -S "$ctl" -O exit "$user@$host" 2>/dev/null || true
+    local connection_user="$1"
+    local connection_host="$2"
+    local socket="$sshfifos/$connection_user@$connection_host:22"
+    
+    if [[ -e "$socket" ]]; then
+        ssh -S "$socket" -O exit "$connection_user@$connection_host" 2>/dev/null || true
         success "SSH connection closed"
     fi
 }
 
 # Function to create remote temporary directory
 create_remote_temp_dir() {
-    local user="$1"
-    local host="$2"
+    local connection_user="$1"
+    local connection_host="$2"
     
     local remote_dir
-    remote_dir=$(ssh -S "$ctl" "$user@$host" "mktemp -d /tmp/vohvelo.XXXXXX") || error "Failed to create remote temporary directory"
+    remote_dir=$(ssh -S "$ctl" "$connection_user@$connection_host" "mktemp -d /tmp/vohvelo.XXXXXX") || error "Failed to create remote temporary directory"
     echo "$remote_dir"
 }
 
 # Function to copy file to remote host
 copy_to_remote() {
     local file="$1"
-    local user="$2"
-    local host="$3"
+    local connection_user="$2"
+    local connection_host="$3"
     local remote_dir="$4"
     
     echo "Copying $(basename "$file") to remote host..."
-    if ! scp -o ControlPath="$ctl" "$file" "$user@$host:$remote_dir/"; then
+    if ! scp -o ControlPath="$ctl" "$file" "$connection_user@$connection_host:$remote_dir/"; then
         error "Failed to copy file to remote host"
     fi
     success "File copied successfully"
@@ -167,11 +188,11 @@ copy_to_remote() {
 copy_from_remote() {
     local remote_file="$1"
     local local_file="$2"
-    local user="$3"
-    local host="$4"
+    local connection_user="$3"
+    local connection_host="$4"
     
     echo "Copying result from remote host..."
-    if ! scp -o ControlPath="$ctl" "$user@$host:$remote_file" "$local_file"; then
+    if ! scp -o ControlPath="$ctl" "$connection_user@$connection_host:$remote_file" "$local_file"; then
         error "Failed to copy file from remote host"
     fi
     success "File retrieved successfully"
@@ -179,84 +200,305 @@ copy_from_remote() {
 
 # Function to cleanup remote directory
 cleanup_remote_dir() {
-    local user="$1"
-    local host="$2"
+    local connection_user="$1"
+    local connection_host="$2"
     local remote_dir="$3"
     
     echo "Cleaning up remote directory..."
-    if ! ssh -S "$ctl" "$user@$host" "rm -rf '$remote_dir'"; then
+    if ! ssh -S "$ctl" "$connection_user@$connection_host" "rm -rf '$remote_dir'"; then
         warn "Failed to cleanup remote directory: $remote_dir"
     fi
 }
 
-# Parse command line options
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -h|--help)
-            show_usage
-            ;;
-        -v|--version)
-            show_version
-            ;;
-        *)
-            break
-            ;;
-    esac
-    shift
-done
+# Function to create a new job
+create_job() {
+    local -a job_inputs=("$1")
+    local -a job_outputs=("$2")
+    local job_host="$3"
+    local job_command="$4"
+    
+    # Create job definition
+    local job="job_inputs=(${job_inputs[*]}); job_outputs=(${job_outputs[*]}); job_host=$job_host; job_command=$job_command"
+    job_queue+=("$job")
+    job_status["${#job_queue[@]}-1"]="pending"
+}
 
-# Initialize arrays for input and output files
+# Function to run interactive mode
+run_interactive_mode() {
+    echo -e "\n${BLUE}Vohvelo Interactive Job Creator v$VERSION${NC}"
+    echo -e "${BLUE}-----------------------------------${NC}\n"
+    
+    local job_count=0
+    local last_host=""
+    
+    while true; do
+        job_count=$((job_count + 1))
+        echo "Job #$job_count:"
+        
+        # Get host
+        local default_host="${last_host:-}"
+        local host
+        if [[ -n "$default_host" ]]; then
+            read -p "Remote host [$default_host]: " host
+            host="${host:-$default_host}"
+        else
+            read -p "Remote host: " host
+        fi
+        last_host="$host"
+        
+        # Get input files
+        local -a inputs=()
+        while true; do
+            read -p "Input file (or press enter to finish): " input
+            [[ -z "$input" ]] && break
+            if [[ -f "$input" ]]; then
+                inputs+=("$input")
+            else
+                echo -e "${YELLOW}Warning: File '$input' not found${NC}"
+                read -p "Use anyway? [y/N] " yn
+                [[ "${yn,,}" == "y" ]] && inputs+=("$input")
+            fi
+        done
+        
+        # Get output files
+        local -a outputs=()
+        while true; do
+            read -p "Output file (or press enter to finish): " output
+            [[ -z "$output" ]] && break
+            outputs+=("$output")
+        done
+        
+        # Get command
+        read -p "Command to run: " command
+        
+        # Show command preview
+        echo -e "\nJob created:"
+        echo "$SCRIPT_NAME \\"
+        for input in "${inputs[@]}"; do
+            echo "  -i \"$input\" \\"
+        done
+        for output in "${outputs[@]}"; do
+            echo "  -o \"$output\" \\"
+        done
+        echo "  -h \"$host\" \\"
+        echo "  -c \"$command\""
+        
+        # Create job
+        create_job "${inputs[@]}" "${outputs[@]}" "$host" "$command"
+        
+        # Ask to add another job
+        read -p $'\nAdd another job? [y/N]: ' add_another
+        [[ "${add_another,,}" != "y" ]] && break
+        echo
+    done
+    
+    # Show job summary
+    echo -e "\n${BLUE}Job Queue Summary${NC}"
+    echo -e "${BLUE}----------------${NC}"
+    for i in "${!job_queue[@]}"; do
+        echo "Job #$((i+1)): ${job_status[$i]}"
+    done
+    
+    # Ask to run jobs
+    read -p $'\nRun jobs now? [Y/n]: ' run_now
+    [[ "${run_now,,}" != "n" ]] && run_job_queue
+}
+
+# Function to process a single job
+process_job() {
+    local -a job_inputs=("$1")
+    local -a job_outputs=("$2")
+    local job_host="$3"
+    local job_command="$4"
+    
+    # Split host into user and hostname
+    local job_user job_hostname
+    IFS='@' read -r job_user job_hostname <<< "$job_host"
+    if [[ -z "$job_user" || -z "$job_hostname" ]]; then
+        error "Invalid host format. Use 'user@hostname'"
+        return 1
+    fi
+    
+    # Setup SSH connection
+    setup_ssh_connection "$job_user" "$job_hostname"
+    
+    # Create remote temporary directory
+    local job_remote_dir
+    job_remote_dir=$(create_remote_temp_dir "$job_user" "$job_hostname")
+    [[ "$debug_mode" == true ]] && echo "Remote directory: $job_remote_dir"
+    
+    # Copy input files to remote host
+    for file in "${job_inputs[@]}"; do
+        copy_to_remote "$file" "$job_user" "$job_hostname" "$job_remote_dir"
+    done
+    
+    # Prepare command with correct paths
+    local modified_job_command="$job_command"
+    for file in "${job_inputs[@]}"; do
+        filename=$(basename "$file")
+        modified_job_command=${modified_job_command//"$filename"/"$job_remote_dir/$filename"}
+    done
+    for file in "${job_outputs[@]}"; do
+        filename=$(basename "$file")
+        modified_job_command=${modified_job_command//"$filename"/"$job_remote_dir/$filename"}
+    done
+    
+    # Execute remote process
+    [[ "$quiet_mode" != true ]] && echo "Starting remote process..."
+    if ! ssh -S "$ctl" "$job_user@$job_hostname" "$modified_job_command"; then
+        error "Remote process failed"
+        return 1
+    fi
+    [[ "$quiet_mode" != true ]] && success "Remote process completed"
+    
+    # Copy output files back
+    for file in "${job_outputs[@]}"; do
+        filename=$(basename "$file")
+        copy_from_remote "$job_remote_dir/$filename" "$file" "$job_user" "$job_hostname"
+    done
+    
+    # Cleanup remote directory
+    cleanup_remote_dir "$job_user" "$job_hostname" "$job_remote_dir"
+    
+    return 0
+}
+
+# Function to run the job queue
+run_job_queue() {
+    local total_jobs=${#job_queue[@]}
+    echo -e "\nRunning $total_jobs jobs..."
+    
+    for i in "${!job_queue[@]}"; do
+        echo -e "\n${BLUE}Running Job #$((i+1))${NC}"
+        job_status[$i]="running"
+        
+        # Create local variables for job
+        local -a job_inputs=()
+        local -a job_outputs=()
+        local job_host=""
+        local job_command=""
+        
+        # Evaluate job definition to set local variables
+        eval "${job_queue[$i]}"
+        
+        # Run the job
+        if process_job "${job_inputs[@]}" "${job_outputs[@]}" "$job_host" "$job_command"; then
+            job_status[$i]="completed"
+            echo -e "${GREEN}Job #$((i+1)) completed successfully${NC}"
+        else
+            job_status[$i]="failed"
+            echo -e "${RED}Job #$((i+1)) failed${NC}"
+            [[ "$wait_mode" != true ]] && error "Job failed and --wait not specified"
+        fi
+    done
+    
+    # Show final summary
+    echo -e "\n${BLUE}Final Job Status${NC}"
+    echo -e "${BLUE}---------------${NC}"
+    for i in "${!job_queue[@]}"; do
+        echo "Job #$((i+1)): ${job_status[$i]}"
+    done
+}
+
+# Initialize variables
 declare -a input_files=()
 declare -a output_files=()
+host=""
+command=""
 debug_mode=false
+quiet_mode=false
+interactive_mode=false
+parallel_jobs=1
+wait_mode=false
+job_file=""
+save_job=""
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -h|--help)
+        --help)
             show_usage
             ;;
         -v|--version)
             show_version
             ;;
-        -i)
+        -i|--input)
             shift
-            [[ $# -eq 0 ]] && error "Missing argument for -i"
+            [[ $# -eq 0 ]] && error "Missing argument for -i/--input"
             input_files+=("$1")
             shift
             ;;
-        -o)
+        -o|--output)
             shift
-            [[ $# -eq 0 ]] && error "Missing argument for -o"
+            [[ $# -eq 0 ]] && error "Missing argument for -o/--output"
             output_files+=("$1")
             shift
             ;;
-        -d)
+        -h|--host)
+            shift
+            [[ $# -eq 0 ]] && error "Missing argument for -h/--host"
+            host="$1"
+            shift
+            ;;
+        -c|--command)
+            shift
+            [[ $# -eq 0 ]] && error "Missing argument for -c/--command"
+            command="$1"
+            shift
+            ;;
+        -I|--interactive)
+            interactive_mode=true
+            shift
+            ;;
+        -d|--debug)
             debug_mode=true
             shift
             ;;
+        -q|--quiet)
+            quiet_mode=true
+            shift
+            ;;
+        -j|--job-file)
+            shift
+            [[ $# -eq 0 ]] && error "Missing argument for -j/--job-file"
+            job_file="$1"
+            shift
+            ;;
+        -s|--save-job)
+            shift
+            [[ $# -eq 0 ]] && error "Missing argument for -s/--save-job"
+            save_job="$1"
+            shift
+            ;;
+        -p|--parallel)
+            shift
+            [[ $# -eq 0 ]] && error "Missing argument for -p/--parallel"
+            parallel_jobs="$1"
+            shift
+            ;;
+        -w|--wait)
+            wait_mode=true
+            shift
+            ;;
         *)
-            break
+            error "Unknown option: $1"
             ;;
     esac
 done
 
-# Check required arguments
-if [[ $# -lt 3 ]]; then
-    error "Missing required arguments\nUse '$SCRIPT_NAME --help' for usage information"
+# Check if interactive mode is requested
+if [[ "$interactive_mode" == true ]]; then
+    run_interactive_mode
+    exit 0
 fi
 
-# Get arguments
-user="$1"
-host="$2"
-shift 2
-remote_command="$*"
+# Check required arguments in non-interactive mode
+if [[ -z "$host" ]]; then
+    error "Missing required argument: -h/--host\nUse '$SCRIPT_NAME --help' for usage information"
+fi
 
-# Debug output
-if [[ "$debug_mode" == true ]]; then
-    echo "Input files: ${input_files[*]}"
-    echo "Output files: ${output_files[*]}"
-    echo "Remote command: $remote_command"
+if [[ -z "$command" ]]; then
+    error "Missing required argument: -c/--command\nUse '$SCRIPT_NAME --help' for usage information"
 fi
 
 # Validate input files
@@ -269,50 +511,14 @@ for file in "${output_files[@]}"; do
     validate_output_path "$file"
 done
 
-# Generate random directory name for remote files
-remote_dir_name="vohvelo_$(head -c 8 /dev/urandom | xxd -p)"
-
-# Setup SSH connection
-setup_ssh_connection "$user" "$host"
-
-# Create remote temporary directory
-remote_dir=$(create_remote_temp_dir "$user" "$host")
-echo "Remote directory: $remote_dir"
-
-# Copy input files to remote host
-for file in "${input_files[@]}"; do
-    copy_to_remote "$file" "$user" "$host" "$remote_dir"
-done
-
-# Prepare command with correct paths
-modified_command="$remote_command"
-for file in "${input_files[@]}"; do
-    filename=$(basename "$file")
-    modified_command=${modified_command//"$filename"/"$remote_dir/$filename"}
-done
-for file in "${output_files[@]}"; do
-    filename=$(basename "$file")
-    modified_command=${modified_command//"$filename"/"$remote_dir/$filename"}
-done
-
-# Execute remote process
-echo "Starting remote process..."
-if ! ssh -S "$ctl" "$user@$host" "$modified_command"; then
-    error "Remote process failed"
-fi
-success "Remote process completed"
-
-# Copy output files back
-for file in "${output_files[@]}"; do
-    filename=$(basename "$file")
-    copy_from_remote "$remote_dir/$filename" "$file" "$user" "$host"
-done
-
-# Cleanup remote directory
-cleanup_remote_dir "$user" "$host" "$remote_dir"
-
-success "Process completed successfully"
-if [[ ${#output_files[@]} -gt 0 ]]; then
-    echo "Output files:"
-    printf '%s\n' "${output_files[@]}"
+# Process the job
+if process_job "${input_files[@]}" "${output_files[@]}" "$host" "$command"; then
+    success "Process completed successfully"
+    if [[ ${#output_files[@]} -gt 0 ]]; then
+        echo "Output files:"
+        printf '%s\n' "${output_files[@]}"
+    fi
+    exit 0
+else
+    error "Process failed"
 fi
