@@ -258,37 +258,59 @@ run_interactive_mode() {
         local default_host="${last_host:-}"
         local host
         if [[ -n "$default_host" ]]; then
-            read -p "Remote host [$default_host]: " host
+            read -p "Remote host [$default_host] (e.g., user@hostname): " host
             host="${host:-$default_host}"
         else
-            read -p "Remote host: " host
+            read -p "Remote host (e.g., user@hostname): " host
         fi
         last_host="$host"
         
         # Get input files
+        echo -e "\nInput files (press enter without typing anything to finish):"
+        echo "Examples: data.csv, script.py, config.json"
         local -a inputs=()
+        local file_num=1
         while true; do
-            read -p "Input file (or press enter to finish): " input
+            read -p "Input file #$file_num: " input
             [[ -z "$input" ]] && break
             if [[ -f "$input" ]]; then
                 inputs+=("$input")
+                ((file_num++))
             else
                 echo -e "${YELLOW}Warning: File '$input' not found${NC}"
                 read -p "Use anyway? [y/N] " yn
-                [[ "${yn,,}" == "y" ]] && inputs+=("$input")
+                if [[ "${yn,,}" == "y" ]]; then
+                    inputs+=("$input")
+                    ((file_num++))
+                fi
             fi
         done
         
         # Get output files
+        echo -e "\nOutput files (press enter without typing anything to finish):"
+        echo "Examples: results.txt, output.pdf, processed.mp4"
         local -a outputs=()
+        local seen_outputs=()
+        local file_num=1
         while true; do
-            read -p "Output file (or press enter to finish): " output
+            read -p "Output file #$file_num: " output
             [[ -z "$output" ]] && break
+            
+            # Check for duplicates
+            if [[ " ${seen_outputs[*]} " =~ " ${output} " ]]; then
+                echo -e "${YELLOW}Warning: Output file '$output' already added${NC}"
+                continue
+            fi
+            
             outputs+=("$output")
+            seen_outputs+=("$output")
+            ((file_num++))
         done
         
         # Get command
-        read -p "Command to run: " command
+        echo -e "\nCommand to run on remote host:"
+        echo "Examples: ls -la, python3 script.py, ffmpeg -i input.mp4 output.mp4"
+        read -p "Command: " command
         
         # Show command preview
         echo -e "\nJob created:"
@@ -309,6 +331,11 @@ run_interactive_mode() {
         read -p $'\nAdd another job? [y/N]: ' add_another
         [[ "${add_another,,}" != "y" ]] && break
         echo
+    done
+    
+    # Initialize job status array
+    for i in "${!job_queue[@]}"; do
+        job_status[$i]="pending"
     done
     
     # Show job summary
