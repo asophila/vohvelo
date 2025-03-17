@@ -433,11 +433,13 @@ process_job() {
     # Execute remote process
     [[ "$quiet_mode" != true ]] && echo "Starting remote process..."
     local remote_script="function run_command() { $modified_job_command; }; run_command"
-    if ! ssh -S "$ctl" "$job_user@$job_hostname" /bin/bash -c "$remote_script"; then
-        error "Remote process failed"
+    local output
+    if ! output=$(ssh -S "$ctl" "$job_user@$job_hostname" /bin/bash -c "$remote_script" 2>&1); then
+        error "Remote process failed: $output"
         return 1
     fi
     [[ "$quiet_mode" != true ]] && success "Remote process completed"
+    [[ -n "$output" ]] && echo -e "\nCommand output:\n$output"
     
     # Copy output files back
     for file in "${job_outputs[@]}"; do
