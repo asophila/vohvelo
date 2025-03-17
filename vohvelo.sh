@@ -35,22 +35,32 @@ success() {
 # Function to display usage information
 show_usage() {
     cat << EOF
-Usage: $SCRIPT_NAME [options] <input_file> <remote_user> <remote_host> <output_file>
+Usage: $SCRIPT_NAME [options] <remote_user> <remote_host> <command> [args...]
 
-Executes processes on a remote machine and retrieves the results.
+Executes a command on a remote machine and retrieves the results.
 
 Arguments:
-  input_file    Path to the input file to process
   remote_user   Username for SSH connection
   remote_host   Remote hostname or IP address
-  output_file   Path for the output file
+  command       Command to execute on the remote machine
+  args          Arguments for the command (including input/output files)
 
 Options:
   -h, --help    Show this help message and exit
   -v, --version Show version information and exit
+  -i FILE       Input file to copy to remote machine
+  -o FILE       Output file to copy back from remote machine
+  -d            Debug mode (show detailed progress)
 
-Example:
-  $SCRIPT_NAME video.mkv user 192.168.1.100 output.mp4
+Examples:
+  # Transcode a video file
+  $SCRIPT_NAME -i video.mkv -o output.mp4 user host ffmpeg -i video.mkv -vcodec libx264 output.mp4
+
+  # Process multiple input files
+  $SCRIPT_NAME -i file1.txt -i file2.txt -o result.txt user host "cat file1.txt file2.txt > result.txt"
+
+  # Run any command
+  $SCRIPT_NAME user host "ls -la"
 
 Note: Both relative and absolute paths are supported for input and output files.
 EOF
@@ -195,29 +205,72 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# Initialize arrays for input and output files
+declare -a input_files=()
+declare -a output_files=()
+debug_mode=false
+
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_usage
+            ;;
+        -v|--version)
+            show_version
+            ;;
+        -i)
+            shift
+            [[ $# -eq 0 ]] && error "Missing argument for -i"
+            input_files+=("$1")
+            shift
+            ;;
+        -o)
+            shift
+            [[ $# -eq 0 ]] && error "Missing argument for -o"
+            output_files+=("$1")
+            shift
+            ;;
+        -d)
+            debug_mode=true
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
 # Check required arguments
-if [[ $# -ne 4 ]]; then
+if [[ $# -lt 3 ]]; then
     error "Missing required arguments\nUse '$SCRIPT_NAME --help' for usage information"
 fi
 
 # Get arguments
-input_file="$1"
-user="$2"
-host="$3"
-output_file="$4"
+user="$1"
+host="$2"
+shift 2
+remote_command="$*"
 
-# Convert paths to absolute paths
-input_file=$(readlink -f "$input_file" 2>/dev/null || echo "$input_file")
-output_file=$(readlink -f "$output_file" 2>/dev/null || echo "$output_file")
+# Debug output
+if [[ "$debug_mode" == true ]]; then
+    echo "Input files: ${input_files[*]}"
+    echo "Output files: ${output_files[*]}"
+    echo "Remote command: $remote_command"
+fi
 
-# Validate input and output
-validate_input_file "$input_file"
-validate_output_path "$output_file"
+# Validate input files
+for file in "${input_files[@]}"; do
+    validate_input_file "$file"
+done
 
-# Get file extension for temporary filename
-extension="${output_file##*.}"
-rnd_filename="vohvelo_$(head -c 8 /dev/urandom | xxd -p).$extension"
-echo "Using temporary filename: $rnd_filename"
+# Validate output paths
+for file in "${output_files[@]}"; do
+    validate_output_path "$file"
+done
+
+# Generate random directory name for remote files
+remote_dir_name="vohvelo_$(head -c 8 /dev/urandom | xxd -p)"
 
 # Setup SSH connection
 setup_ssh_connection "$user" "$host"
@@ -226,21 +279,40 @@ setup_ssh_connection "$user" "$host"
 remote_dir=$(create_remote_temp_dir "$user" "$host")
 echo "Remote directory: $remote_dir"
 
-# Copy input file to remote host
-copy_to_remote "$input_file" "$user" "$host" "$remote_dir"
+# Copy input files to remote host
+for file in "${input_files[@]}"; do
+    copy_to_remote "$file" "$user" "$host" "$remote_dir"
+done
+
+# Prepare command with correct paths
+modified_command="$remote_command"
+for file in "${input_files[@]}"; do
+    filename=$(basename "$file")
+    modified_command=${modified_command//"$filename"/"$remote_dir/$filename"}
+done
+for file in "${output_files[@]}"; do
+    filename=$(basename "$file")
+    modified_command=${modified_command//"$filename"/"$remote_dir/$filename"}
+done
 
 # Execute remote process
 echo "Starting remote process..."
-if ! ssh -S "$ctl" "$user@$host" "ffmpeg -hwaccel auto -i '$remote_dir/$(basename "$input_file")' -bsf:v h264_mp4toannexb -sn -map 0:0 -map 0:1 -vcodec libx264 '$remote_dir/$rnd_filename'"; then
+if ! ssh -S "$ctl" "$user@$host" "$modified_command"; then
     error "Remote process failed"
 fi
 success "Remote process completed"
 
-# Copy result back
-copy_from_remote "$remote_dir/$rnd_filename" "$output_file" "$user" "$host"
+# Copy output files back
+for file in "${output_files[@]}"; do
+    filename=$(basename "$file")
+    copy_from_remote "$remote_dir/$filename" "$file" "$user" "$host"
+done
 
 # Cleanup remote directory
 cleanup_remote_dir "$user" "$host" "$remote_dir"
 
 success "Process completed successfully"
-echo "Output file: $output_file"
+if [[ ${#output_files[@]} -gt 0 ]]; then
+    echo "Output files:"
+    printf '%s\n' "${output_files[@]}"
+fi

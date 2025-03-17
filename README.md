@@ -60,12 +60,14 @@ https://user-images.githubusercontent.com/5770504/173208139-d86893e6-f79f-4e42-9
 
 Vohvelo simplifies the process of running tasks on remote machines by handling all the necessary steps:
 1. Securely copying input files to the remote machine
-2. Executing the process remotely
+2. Executing any command remotely
 3. Retrieving the results back to your local machine
 4. Cleaning up temporary files on the remote host
 
 ### Key Features
 
+- **Flexible Command Execution**: Run any command on the remote machine
+- **Multiple File Support**: Handle multiple input and output files
 - **Robust Error Handling**: Comprehensive error checking and meaningful error messages
 - **Path Support**: Handles both relative and absolute paths for input/output files
 - **Space-Safe**: Properly handles filenames containing spaces and special characters
@@ -73,6 +75,7 @@ Vohvelo simplifies the process of running tasks on remote machines by handling a
 - **Clean**: Automatically manages temporary files and connections
 - **User-Friendly**: Colored output and progress indicators
 - **Efficient**: Uses SSH control connections for faster operations
+- **Debug Mode**: Optional detailed progress information
 
 ### Built With
 
@@ -94,7 +97,7 @@ The following tools must be installed on your local machine:
 * readlink (for path resolution)
 * xxd (for random filename generation)
 
-The process to be run (e.g., ffmpeg) must be installed on the remote machine.
+Any commands you want to run must be installed on the remote machine.
 
 ### Installation
 
@@ -115,38 +118,56 @@ The process to be run (e.g., ffmpeg) must be installed on the remote machine.
 ## Usage
 
 ```sh
-vohvelo.sh [options] <input_file> <remote_user> <remote_host> <output_file>
+vohvelo.sh [options] <remote_user> <remote_host> <command> [args...]
 ```
 
 ### Arguments
 
-- `input_file`: Path to the file to process (supports relative/absolute paths)
 - `remote_user`: Username for SSH connection
 - `remote_host`: Remote hostname or IP address
-- `output_file`: Path for the output file (supports relative/absolute paths)
+- `command`: Command to execute on the remote machine
+- `args`: Arguments for the command (including input/output files)
 
 ### Options
 
 - `-h, --help`: Show help message and exit
 - `-v, --version`: Show version information and exit
+- `-i FILE`: Input file to copy to remote machine
+- `-o FILE`: Output file to copy back from remote machine
+- `-d`: Debug mode (show detailed progress)
 
 <!-- EXAMPLES -->
 ## Examples
 
-### Basic Usage
+### Video Transcoding
 Process a video file on a remote machine:
 ```sh
-./vohvelo.sh "My Video.mkv" user 192.168.0.45 "Processed Video.mp4"
+./vohvelo.sh -i "My Video.mkv" -o "Processed Video.mp4" \
+  user 192.168.0.45 \
+  ffmpeg -i "My Video.mkv" -vcodec libx264 "Processed Video.mp4"
 ```
 
-### Using Absolute Paths
+### Multiple Input Files
+Process multiple files:
 ```sh
-./vohvelo.sh /home/user/videos/input.mkv remote_user 192.168.0.45 /home/user/processed/output.mp4
+./vohvelo.sh -i file1.txt -i file2.txt -o result.txt \
+  user media-server.local \
+  "cat file1.txt file2.txt > result.txt"
 ```
 
-### Using Remote Hostname
+### Simple Remote Commands
+Run commands without file transfers:
 ```sh
-./vohvelo.sh video.mkv user media-server.local output.mp4
+./vohvelo.sh user host "ls -la"
+./vohvelo.sh user host "df -h"
+```
+
+### Using Debug Mode
+Get detailed progress information:
+```sh
+./vohvelo.sh -d -i input.dat -o output.dat \
+  user host \
+  "./process_data input.dat output.dat"
 ```
 
 <!-- ROADMAP -->
@@ -155,11 +176,10 @@ Process a video file on a remote machine:
 - [x] Handle filenames with spaces
 - [x] Support full input/output paths
 - [x] Add proper error handling
-- [ ] Accept any process (with arguments) as input
-    - [ ] Recognize filenames in the command
-    - [ ] Check if those filenames exist locally
-    - [ ] Copy necessary files to remote machine
-    - [ ] Identify output filenames
+- [x] Accept any process (with arguments) as input
+    - [x] Support multiple input files
+    - [x] Support multiple output files
+    - [x] Handle command path substitution
 - [ ] Add progress indicators for file transfers
 - [ ] Add configuration file support
 - [ ] Add parallel processing support
