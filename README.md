@@ -11,9 +11,9 @@
 <h3 align="center">VOHVELO</h3>
 
   <p align="center">
-    Vohvelo [βo̞ʰ ve̞lo̞ʰ] aims to be a simple and widely usable tool to run processes on a remote machine. Although is quite simple to do just by SSH'ing into another machine and running a process, that manual work of copying, waiting the process to finish and bringing the results back (and cleaning up the remote host) can be a little bit frustrating.
+    Vohvelo [βo̞ʰ ve̞lo̞ʰ] is a robust tool for running processes on remote machines. While SSH makes it easy to run commands remotely, Vohvelo automates the entire workflow of copying files, executing processes, and retrieving results, making remote processing seamless and efficient.
     <br />
-    The original use case comes from trying to transcode from x265 in a Raspberry Pi, failing to do so, and trying to automate the outsourced process into my main computer.
+    The original use case comes from transcoding video from x265 to x264 on a Raspberry Pi, where offloading the process to a more powerful machine significantly reduces processing time.
     <br />
     <a href="https://github.com/bicubico/vohvelo"><strong>Explore the docs »</strong></a>
     <br />
@@ -26,8 +26,6 @@
   </p>
 </div>
 
-
-
 <!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary>
@@ -35,6 +33,7 @@
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
+        <li><a href="#key-features">Key Features</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
@@ -46,6 +45,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#examples">Examples</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -53,37 +53,48 @@
   </ol>
 </details>
 
-
-
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
 https://user-images.githubusercontent.com/5770504/173208139-d86893e6-f79f-4e42-938e-6647acd77cce.mp4
 
+Vohvelo simplifies the process of running tasks on remote machines by handling all the necessary steps:
+1. Securely copying input files to the remote machine
+2. Executing the process remotely
+3. Retrieving the results back to your local machine
+4. Cleaning up temporary files on the remote host
 
-Run your process (with the files needed) on another machine and bring back the results.
+### Key Features
 
-<p align="right">(<a href="#top">back to top</a>)</p>
+- **Robust Error Handling**: Comprehensive error checking and meaningful error messages
+- **Path Support**: Handles both relative and absolute paths for input/output files
+- **Space-Safe**: Properly handles filenames containing spaces and special characters
+- **Secure**: Uses SSH for secure file transfers and remote execution
+- **Clean**: Automatically manages temporary files and connections
+- **User-Friendly**: Colored output and progress indicators
+- **Efficient**: Uses SSH control connections for faster operations
 
+### Built With
 
-
-### Built With Bash
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
+- Bash
+- SSH/SCP for secure remote operations
+- Standard Unix tools
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Just clone the project and run it in your local machine.
-The process to be run must be already installed on the remote machine.
+To get started with Vohvelo, follow these simple steps.
 
 ### Prerequisites
 
-What you'll need:
+The following tools must be installed on your local machine:
 * bash
 * ssh
 * scp
+* readlink (for path resolution)
+* xxd (for random filename generation)
+
+The process to be run (e.g., ffmpeg) must be installed on the remote machine.
 
 ### Installation
 
@@ -91,53 +102,69 @@ What you'll need:
    ```sh
    git clone https://github.com/asophila/vohvelo.git
    ```
-2. Done
+2. Make the script executable
+   ```sh
+   chmod +x vohvelo.sh
+   ```
+3. Optionally, move to your PATH
+   ```sh
+   sudo cp vohvelo.sh /usr/local/bin/vohvelo
+   ```
 
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
-<!-- USAGE EXAMPLES -->
+<!-- USAGE -->
 ## Usage
 
-Usage is simple:
 ```sh
-./vohvelo.sh <file to process> <remote user> <remote host> <local output filename>
+vohvelo.sh [options] <input_file> <remote_user> <remote_host> <output_file>
 ```
 
-Example:
-Suppose we have a video file in a low power machine, a Raspberry Pi or something like that, and we need to do the transcoding from x265 to x264 to make it easier for de Rpi to playback that file.
-The transcoding could take many hours in the Raspberry, but only 5 minutes in another machine in the network.
-To send the video file and ask the other machine to transcode, and send back the transcoded file would need something like:
+### Arguments
+
+- `input_file`: Path to the file to process (supports relative/absolute paths)
+- `remote_user`: Username for SSH connection
+- `remote_host`: Remote hostname or IP address
+- `output_file`: Path for the output file (supports relative/absolute paths)
+
+### Options
+
+- `-h, --help`: Show help message and exit
+- `-v, --version`: Show version information and exit
+
+<!-- EXAMPLES -->
+## Examples
+
+### Basic Usage
+Process a video file on a remote machine:
 ```sh
-./vohvelo.sh morbius.mkv remote_user 192.168.0.45 morbius.mp4
+./vohvelo.sh "My Video.mkv" user 192.168.0.45 "Processed Video.mp4"
 ```
-This will:
-* Copy the original file to the remote machine using the user and host provided
-* Trigger the ffmpeg transcoding process (currently the process is hardcoded, maybe later we could make it run anything)
-* Wait for the transcoding to finish
-* Copy the resulting file back to the local machine
-* Cleanup the remote folders
 
-<p align="right">(<a href="#top">back to top</a>)</p>
+### Using Absolute Paths
+```sh
+./vohvelo.sh /home/user/videos/input.mkv remote_user 192.168.0.45 /home/user/processed/output.mp4
+```
 
+### Using Remote Hostname
+```sh
+./vohvelo.sh video.mkv user media-server.local output.mp4
+```
 
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Process files with full input and output paths
-- [ ] Accept filenames containing spaces
-- [ ] Accept any process (with arguments) as an input
+- [x] Handle filenames with spaces
+- [x] Support full input/output paths
+- [x] Add proper error handling
+- [ ] Accept any process (with arguments) as input
     - [ ] Recognize filenames in the command
-    - [ ] Check if those filenames exist as files in the local machine
-    - [ ] Copy those files to the remote machine
-    - [ ] Identify non existant files in the command as output filenames
+    - [ ] Check if those filenames exist locally
+    - [ ] Copy necessary files to remote machine
+    - [ ] Identify output filenames
+- [ ] Add progress indicators for file transfers
+- [ ] Add configuration file support
+- [ ] Add parallel processing support
 
-See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
+See the [open issues](https://github.com/bicubico/vohvelo/issues) for a full list of proposed features (and known issues).
 
 <!-- CONTRIBUTING -->
 ## Contributing
@@ -153,18 +180,10 @@ Don't forget to give the project a star! Thanks again!
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
 <!-- LICENSE -->
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
 
 <!-- CONTACT -->
 ## Contact
@@ -172,8 +191,5 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 Your Name - [@asophila](https://lile.cl/asophila) - asophila ARR0BA pm.me
 
 Project Link: [https://github.com/asophila/vohvelo](https://github.com/asophila/vohvelo)
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 <p align="right">(<a href="#top">back to top</a>)</p>
