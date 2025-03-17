@@ -71,19 +71,29 @@ vohvelo.sh [options]
 ```
 
 ### Options
+
+**Required Parameters:**
+- `-h, --host HOST`: Remote host in user@hostname format (e.g., user@192.168.1.100)
+- `-c, --command CMD`: Command to execute on the remote machine
+
+**File Transfer Parameters:**
 - `-i, --input FILE`: Input file to copy to remote machine (can be used multiple times)
 - `-o, --output FILE`: Output file to copy back (can be used multiple times)
-- `-h, --host HOST`: Remote host in user@hostname format
-- `-c, --command CMD`: Command to execute on the remote machine
+
+**Mode Parameters:**
 - `-I, --interactive`: Enter interactive job creation mode
-- `-d, --debug`: Enable debug mode
+- `-d, --debug`: Enable debug mode with detailed progress information
 - `-q, --quiet`: Suppress progress output
+- `-w, --wait`: Continue execution even if a job fails
+
+**Information Parameters:**
+- `--help`: Show help message and usage information
+- `-v, --version`: Show version information
+
+**Note:** The following parameters are planned for future implementation:
 - `-j, --job-file FILE`: Load job definition from file
 - `-s, --save-job FILE`: Save job definition to file for later use
 - `-p, --parallel N`: Run up to N jobs in parallel (default: 1)
-- `-w, --wait`: Wait for all jobs to complete before exiting
-- `--help`: Show help message
-- `-v, --version`: Show version information
 
 ### Simple Example
 ```bash
@@ -190,26 +200,20 @@ vohvelo.sh \
 
 ### Job Queue Management
 
-The script provides robust job queue management:
+The script provides job queue management through interactive mode:
 
 1. **Job Creation**
    ```bash
-   # Interactive job creation with save
-   vohvelo.sh --interactive -s jobs.json
+   # Start interactive job creation
+   vohvelo.sh --interactive
    ```
 
-2. **Job Execution**
-   ```bash
-   # Load and run saved jobs
-   vohvelo.sh -j jobs.json -p 4 -w
-   ```
-
-3. **Job Features**
-   - Save jobs for later execution
-   - Run multiple jobs in parallel
-   - Wait mode for continuous execution
-   - Job status tracking and reporting
-   - Command output capture and display
+2. **Job Features**
+   - Create multiple jobs in one session
+   - Review job queue before execution
+   - Execute jobs sequentially
+   - Track job status and progress
+   - View command output in real-time
 
 ### Video Processing
 
