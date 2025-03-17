@@ -1,4 +1,4 @@
-e #!/bin/bash
+#!/bin/bash
 
 # Vohvelo - Remote Process Execution Tool
 # Executes processes on a remote machine and retrieves the results
