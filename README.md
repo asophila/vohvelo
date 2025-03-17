@@ -293,24 +293,33 @@ vohvelo.sh -d \
 ## 📚 Command Reference
 
 ### Command Structure
+
 ```bash
 vohvelo.sh [options]
-
-Options:
-  -i, --input FILE      Input file to copy to remote machine (can be used multiple times)
-  -o, --output FILE     Output file to copy back (can be used multiple times)
-  -h, --host HOST       Remote host in user@hostname format
-  -c, --command CMD     Command to execute on the remote machine
-  -I, --interactive     Enter interactive job creation mode
-  -d, --debug          Enable debug mode
-  -q, --quiet          Suppress progress output
-  -j, --job-file FILE  Load job definition from file
-  -s, --save-job FILE  Save job definition to file for later use
-  -p, --parallel N     Run up to N jobs in parallel (default: 1)
-  -w, --wait           Wait for all jobs to complete before exiting
-      --help           Show this help message and exit
-  -v, --version        Show version information and exit
 ```
+
+**Required Parameters:**
+- `-h, --host HOST`: Remote host in user@hostname format (e.g., user@192.168.1.100)
+- `-c, --command CMD`: Command to execute on the remote machine
+
+**File Transfer Parameters:**
+- `-i, --input FILE`: Input file to copy to remote machine (can be used multiple times)
+- `-o, --output FILE`: Output file to copy back (can be used multiple times)
+
+**Mode Parameters:**
+- `-I, --interactive`: Enter interactive job creation mode
+- `-d, --debug`: Enable debug mode with detailed progress information
+- `-q, --quiet`: Suppress progress output
+- `-w, --wait`: Continue execution even if a job fails
+
+**Information Parameters:**
+- `--help`: Show help message and usage information
+- `-v, --version`: Show version information
+
+**Note:** The following parameters are planned for future implementation:
+- `-j, --job-file FILE`: Load job definition from file
+- `-s, --save-job FILE`: Save job definition to file for later use
+- `-p, --parallel N`: Run up to N jobs in parallel (default: 1)
 
 ### Path Handling
 - Relative paths are resolved from the current directory
