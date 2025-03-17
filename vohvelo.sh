@@ -455,20 +455,28 @@ process_job() {
         local cmd_parts
         read -r cmd_parts redirect_file <<< "${modified_job_command//>/ }"
         # Create a script to handle redirection
-        if ! output=$(ssh -S "$ctl" "$job_user@$job_hostname" bash << EOF 2>&1
-cd "$job_remote_dir"
-$cmd_parts > "$redirect_file"
+        if ! output=$(ssh -S "$ctl" "$job_user@$job_hostname" bash << 'EOF' 2>&1
+run_command() {
+    cd "$1" || exit 1
+    shift
+    eval "$@"
+}
+run_command "$0" "$@"
 EOF
-); then
+        "$job_remote_dir" "$cmd_parts > \"$redirect_file\""); then
             error "Remote process failed: $output"
             return 1
         fi
     else
-        if ! output=$(ssh -S "$ctl" "$job_user@$job_hostname" bash << EOF 2>&1
-cd "$job_remote_dir"
-$modified_job_command
+        if ! output=$(ssh -S "$ctl" "$job_user@$job_hostname" bash << 'EOF' 2>&1
+run_command() {
+    cd "$1" || exit 1
+    shift
+    eval "$@"
+}
+run_command "$0" "$@"
 EOF
-); then
+        "$job_remote_dir" "$modified_job_command"); then
             error "Remote process failed: $output"
             return 1
         fi
