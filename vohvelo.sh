@@ -255,13 +255,16 @@ run_interactive_mode() {
         echo "Job #$job_count:"
         
         # Get host
+        echo -e "\n${BLUE}Remote Host${NC}"
+        echo "Format: user@hostname (e.g., jetson@192.168.1.100)"
+        echo "This is the remote machine where the command will be executed."
         local default_host="${last_host:-}"
         local host
         if [[ -n "$default_host" ]]; then
-            read -p "Remote host [$default_host] (e.g., user@hostname): " host_input
+            read -p "Remote host [$default_host]: " host_input
             host="${host_input:-$default_host}"
         else
-            read -p "Remote host (e.g., user@hostname): " host_input
+            read -p "Remote host: " host_input
             host="$host_input"
         fi
         
@@ -274,8 +277,10 @@ run_interactive_mode() {
         last_host="$host"
         
         # Get input files
-        echo -e "\nInput files (press enter without typing anything to finish):"
-        echo "Examples: data.csv, script.py, config.json"
+        echo -e "\n${BLUE}Input Files${NC}"
+        echo "These files will be copied to the remote machine before execution."
+        echo "Examples: video.mkv (for transcoding), data.csv (for processing)"
+        echo "Press enter without typing anything when done adding files."
         local -a inputs=()
         local file_num=1
         while true; do
@@ -295,8 +300,10 @@ run_interactive_mode() {
         done
         
         # Get output files
-        echo -e "\nOutput files (press enter without typing anything to finish):"
-        echo "Examples: results.txt, output.pdf, processed.mp4"
+        echo -e "\n${BLUE}Output Files${NC}"
+        echo "These files will be copied back after command execution."
+        echo "Examples: output.mp4 (transcoded video), results.txt (command output)"
+        echo "Press enter without typing anything when done adding files."
         local -a outputs=()
         local seen_outputs=()
         local file_num=1
@@ -323,8 +330,12 @@ run_interactive_mode() {
         done
         
         # Get command
-        echo -e "\nCommand to run on remote host:"
-        echo "Examples: ls -la, python3 script.py, ffmpeg -i input.mp4 output.mp4"
+        echo -e "\n${BLUE}Remote Command${NC}"
+        echo "The command to execute on the remote machine."
+        echo "Examples:"
+        echo "  ls -la > list.txt              (list directory contents)"
+        echo "  ffmpeg -i in.mkv out.mp4       (transcode video)"
+        echo "  python3 script.py data.csv     (process data)"
         read -p "Command: " command_input
         
         # Clean up command input
