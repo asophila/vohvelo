@@ -225,10 +225,20 @@ create_job() {
     local job_command
     
     # Parse input arrays
-    eval "job_inputs=($1)"  # Expand the space-separated list into an array
-    eval "job_outputs=($2)" # Expand the space-separated list into an array
-    job_host="$3"
-    job_command="$4"
+    if [[ -n "${1:-}" ]]; then
+        eval "job_inputs=($1)"  # Expand the space-separated list into an array
+    else
+        job_inputs=()
+    fi
+    
+    if [[ -n "${2:-}" ]]; then
+        eval "job_outputs=($2)" # Expand the space-separated list into an array
+    else
+        job_outputs=()
+    fi
+    
+    job_host="${3:-}"
+    job_command="${4:-}"
     
     # Create job definition
     local job="job_inputs=(${job_inputs[*]}); job_outputs=(${job_outputs[*]}); job_host=$job_host; job_command=$job_command"
