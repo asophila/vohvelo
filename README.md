@@ -100,27 +100,68 @@ vohvelo.sh -i input.txt -o output.txt -h user@host -c "sort input.txt > output.t
 
 ### Interactive Mode
 
-Create and manage multiple jobs interactively:
+The interactive mode provides a guided experience for creating and managing jobs:
 ```bash
 vohvelo.sh --interactive
 ```
 
-This mode allows you to:
-- Create multiple jobs with different parameters
-- Review job definitions before execution
-- Execute all jobs in sequence
-- Monitor job status and progress
+Each job creation step includes:
 
-### Job Queue
+1. **Remote Host Configuration**
+   - Format: user@hostname (e.g., jetson@192.168.1.100)
+   - Clear validation and error messages
+   - Previous host remembered for convenience
 
-Run multiple jobs with different configurations:
-```bash
-# Create and save jobs for later
-vohvelo.sh --interactive -s jobs.json
+2. **Input Files Selection**
+   - Add multiple input files to be processed
+   - File existence validation
+   - Examples for different use cases:
+     * video.mkv (for transcoding)
+     * data.csv (for processing)
+     * script.py (for execution)
 
-# Load and run saved jobs
-vohvelo.sh -j jobs.json -p 4 -w
-```
+3. **Output Files Definition**
+   - Specify files to retrieve after execution
+   - Duplicate detection and validation
+   - Examples for common scenarios:
+     * output.mp4 (transcoded video)
+     * results.txt (command output)
+     * processed.csv (data results)
+
+4. **Command Configuration**
+   - Clear examples for different operations:
+     * `ls -la > list.txt` (list directory contents)
+     * `ffmpeg -i in.mkv out.mp4` (transcode video)
+     * `python3 script.py data.csv` (process data)
+
+5. **Job Management**
+   - Review job configuration before execution
+   - Add multiple jobs to the queue
+   - Monitor job status and progress
+   - See command output in real-time
+
+### Job Queue Management
+
+The script provides robust job queue management:
+
+1. **Job Creation**
+   ```bash
+   # Interactive job creation with save
+   vohvelo.sh --interactive -s jobs.json
+   ```
+
+2. **Job Execution**
+   ```bash
+   # Load and run saved jobs
+   vohvelo.sh -j jobs.json -p 4 -w
+   ```
+
+3. **Job Features**
+   - Save jobs for later execution
+   - Run multiple jobs in parallel
+   - Wait mode for continuous execution
+   - Job status tracking and reporting
+   - Command output capture and display
 
 ### Video Processing
 
